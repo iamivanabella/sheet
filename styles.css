@@ -1,0 +1,11 @@
+.que.sheet textarea.qtype_sheet_response { /* For input mode */
+    width: 100%;
+}
+
+.que.sheet .qtype_sheet_response { /* For both input and readonly mode */
+    min-height: 3em; /* Minimum height of response area */
+}
+
+.que.sheet .qtype_sheet_response.readonly { /* For readonly mode */
+    background-color: white;
+}
