@@ -33,34 +33,21 @@ defined('MOODLE_INTERNAL') || die();
 class qtype_sheet_edit_form extends question_edit_form {
 
     protected function definition_inner($mform) {
+        global $PAGE; // Ensure $PAGE is available
+
         // Add Handsontable container
-        $mform->addElement('html', '<div id="spreadsheet-editor"></div>');
+        $mform->addElement('html', '<div id="spreadsheet-editor" style="width: 600px; height: 300px;"></div>');
 
-        // Spreadsheet options (replace with your actual options)
-        $spreadsheetOptions = array(
-            'blank' => get_string('blank_spreadsheet', 'qtype_sheet'),
-            'preformatted' => get_string('preformatted_spreadsheet', 'qtype_sheet'),
-        );
-        $mform->addElement('select', 'spreadsheettype', get_string('spreadsheettype', 'qtype_sheet'), $spreadsheetOptions);
+        // Hidden field to store spreadsheet data
+        $mform->addElement('hidden', 'spreadsheetdata');
+        $mform->setType('spreadsheetdata', PARAM_RAW); // Allow HTML content
 
-        // Hidden field to store pre-formatted spreadsheet data (if applicable)
-        $mform->addElement('hidden', 'preformatteddata');
-        $mform->setType('preformatteddata', PARAM_RAW); // Allow HTML content
+        // Include Handsontable CSS and JS files
+        $PAGE->requires->css(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.css'));
+        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.js'));
 
-        // Grading options (for manual grading)
-        // ... (add your existing grading options here if needed)
-
-        // Handsontable initialization (in JavaScript)
-        $mform->addElement('html', '<script>
-            var container = document.getElementById("spreadsheet-editor");
-            var hot = new Handsontable(container, {
-                data: [], // Initial data (empty or pre-formatted based on selection)
-                rowHeaders: true,
-                colHeaders: true,
-                formulas: true, // Enable formulas
-                licenseKey: "non-commercial-and-evaluation",
-            });
-        </script>');
+        // Include Handsontable initialization script
+        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init', array());
     }
 
     protected function data_preprocessing($question) {
@@ -68,16 +55,10 @@ class qtype_sheet_edit_form extends question_edit_form {
 
         // Check if options exist and response template is set
         if (isset($question->options) && isset($question->options->responsetemplate)) {
-            $question->responsetemplate = array(
-                'text' => $question->options->responsetemplate,
-                'format' => $question->options->responsetemplateformat,
-            );
+            $question->spreadsheetdata = $question->options->spreadsheetdata;
         } else {
             // Set default response template if none exists (for new questions)
-            $question->responsetemplate = array(
-                'text' => '', // or a default template if desired
-                'format' => FORMAT_HTML,
-            );
+            $question->spreadsheetdata = json_encode(array_fill(0, 10, array_fill(0, 10, '')));
         }
 
         return $question;

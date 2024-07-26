@@ -1,32 +1,29 @@
-define(['jquery', 'core/log', 'handsontable'], function($, Log, Handsontable) {
+
+define(['jquery', 'core/log'], function($, Log) {
     return {
-        init: function(config) {
-            Log.debug('Initializing Handsontable');
+        init: function() {
+            Log.debug('Initializing Handsontable...');
 
-            var container = document.getElementById('handsontable');
-            var handsontable_data = $('#handsontable_data').val();
-            var handsontable_config = config;
-
-            if (handsontable_data) {
-                handsontable_data = JSON.parse(handsontable_data);
-            } else {
-                handsontable_data = [];
-            }
-
+            var container = document.getElementById("spreadsheet-editor");
             var hot = new Handsontable(container, {
-                data: handsontable_data,
-                colHeaders: handsontable_config.colHeaders,
-                rowHeaders: handsontable_config.rowHeaders,
-                columns: new Array(handsontable_config.cols).fill({}),
-                minRows: handsontable_config.rows,
-                maxRows: handsontable_config.rows,
-                minCols: handsontable_config.cols,
-                maxCols: handsontable_config.cols
+                data: [], // Initial data
+                rowHeaders: true,
+                colHeaders: true,
+                rowCount: 10,
+                colCount: 10,
+                formulas: true,
+                licenseKey: "non-commercial-and-evaluation",
+                afterChange: function(changes, source) {
+                    if (source !== "loadData") {
+                        document.getElementById("id_spreadsheetdata").value = JSON.stringify(hot.getData());
+                    }
+                }
             });
 
-            $('#mform1').submit(function() {
-                $('#handsontable_data').val(JSON.stringify(hot.getData()));
-            });
+            var existingData = document.getElementById("id_spreadsheetdata").value;
+            if (existingData) {
+                hot.loadData(JSON.parse(existingData));
+            }
         }
     };
 });
