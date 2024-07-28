@@ -8,7 +8,7 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key linking to the question table."/>
-        <field name="spreadsheetdata" type="text" notnull="false" />
+        <FIELD NAME="spreadsheetdata" TYPE="text" NOTNULL="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

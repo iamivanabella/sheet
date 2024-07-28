@@ -36,15 +36,17 @@ class qtype_sheet_edit_form extends question_edit_form {
         global $PAGE; // Ensure $PAGE is available
 
         // Add Handsontable container
-        $mform->addElement('html', '<div id="spreadsheet-editor" style="width: 600px; height: 300px;"></div>');
+        $mform->addElement('html', '<div id="spreadsheet-editor"></div>');
 
         // Hidden field to store spreadsheet data
         $mform->addElement('hidden', 'spreadsheetdata');
         $mform->setType('spreadsheetdata', PARAM_RAW); // Allow HTML content
+        $mform->getElement('spreadsheetdata')->updateAttributes(array('id' => 'id_spreadsheetdata'));
 
         // Include Handsontable CSS and JS files
         $PAGE->requires->css(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.css'));
         $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.js'));
+        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/hyperformula.full.min.js'));
 
         // Include Handsontable initialization script
         $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init', array());
@@ -54,11 +56,11 @@ class qtype_sheet_edit_form extends question_edit_form {
         $question = parent::data_preprocessing($question);
 
         // Check if options exist and response template is set
-        if (isset($question->options) && isset($question->options->responsetemplate)) {
+        if (isset($question->options) && isset($question->options->spreadsheetdata)) {
             $question->spreadsheetdata = $question->options->spreadsheetdata;
         } else {
             // Set default response template if none exists (for new questions)
-            $question->spreadsheetdata = json_encode(array_fill(0, 10, array_fill(0, 10, '')));
+            $question->spreadsheetdata = json_encode(array_fill(0, 20, array_fill(0, 20, '')));
         }
 
         return $question;

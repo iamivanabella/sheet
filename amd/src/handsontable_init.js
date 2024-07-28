@@ -1,4 +1,3 @@
-
 define(['jquery', 'core/log'], function($, Log) {
     return {
         init: function() {
@@ -9,9 +8,13 @@ define(['jquery', 'core/log'], function($, Log) {
                 data: [], // Initial data
                 rowHeaders: true,
                 colHeaders: true,
-                rowCount: 10,
-                colCount: 10,
-                formulas: true,
+                rowCount: 20,
+                colCount: 20,
+                dropdownMenu: true,
+                contextMenu: true,
+                formulas: {
+                    engine: HyperFormula
+                },
                 licenseKey: "non-commercial-and-evaluation",
                 afterChange: function(changes, source) {
                     if (source !== "loadData") {
