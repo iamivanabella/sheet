@@ -55,7 +55,7 @@ class qtype_sheet extends question_type {
 
         $options = new stdClass();
         $options->questionid = $formdata->id;
-        $options->responseformat = $formdata->spreadsheetdata;  
+        $options->spreadsheetdata  = $formdata->spreadsheetdata;  
 
         // Insert or update the options record in the database
         if ($DB->record_exists('qtype_sheet_options', ['questionid' => $formdata->id])) {

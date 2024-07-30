@@ -31,20 +31,13 @@ class qtype_sheet_renderer extends qtype_renderer {
 
     public function formulation_and_controls(question_attempt $qa, question_display_options $options) {
         $question = $qa->get_question();
-        $step = $qa->get_last_step_with_qt_var('answer');
+        $step = $qa->get_last_step_with_qt_var('spreadsheetdata');
         $this->displayoptions = $options;
 
-        // Display response template if available and question is in readonly mode
-        $responsetemplate = '';
-        if (!empty($question->responsetemplate) && !$step->has_qt_var('answer') && empty($options->readonly)) {
-            $responsetemplate = format_text($question->responsetemplate, $question->responsetemplateformat);
-            $step = new question_attempt_step(['answer' => $responsetemplate]);
-        }
-
         if (empty($options->readonly)) { // Student input mode
-            $answer = $this->render_response_input($qa, $question->responsefieldlines, $responsetemplate);
+            $answer = $this->render_response_input($qa, $question, $step);
         } else { // Read-only mode (review)
-            $answer = $this->render_response_readonly($qa, $question->responsefieldlines, $step); 
+            $answer = $this->render_response_readonly($qa, $question, $step); 
         }
 
         $result = html_writer::tag('div', $question->format_questiontext($qa), ['class' => 'qtext']); // Question text
@@ -58,46 +51,38 @@ class qtype_sheet_renderer extends qtype_renderer {
         return $result;
     }
 
-    private function render_response_input(question_attempt $qa, $lines, $responsetemplate) {
-        global $CFG;
-        require_once($CFG->dirroot . '/repository/lib.php');
-        
-        $inputname = $qa->get_qt_field_name('answer');
+    private function render_response_input(question_attempt $qa, $question, $step) {
+        $inputname = $qa->get_qt_field_name('spreadsheetdata');
         $id = $inputname . '_id';
-        $responseformat = $qa->get_last_qt_var('answerformat') ?: FORMAT_HTML;
-        $responselabel = get_string('answer', 'qtype_sheet');
-    
-        $editor = editors_get_preferred_editor($responseformat);
-        $editor->use_editor($id, ['context' => $this->page->context, 'autosave' => false]); // Initialize the editor
-    
-        $output = html_writer::tag('label', $responselabel, ['class' => 'sr-only', 'for' => $id]);
+        $data = $step->get_qt_var('spreadsheetdata') ?: json_encode(array_fill(0, 10, array_fill(0, 10, '')));
 
-        // Directly render the textarea:
-        $output .= html_writer::tag('textarea', s($responsetemplate . $qa->get_last_qt_var('answer')),
-                ['id' => $id, 'name' => $inputname, 'rows' => $lines, 'cols' => 60, 'class' => 'form-control qtype_sheet_response']); 
-    
-        $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $inputname . 'format', 'value' => $responseformat]);
-    
+        global $PAGE;
+        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init', array('spreadsheetdata' => $data));
+
+        $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
+        $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor', 'class' => 'form-control', 'style' => 'width: 600px; height: 300px;']);
+        $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => $id, 'name' => $inputname, 'value' => s($data)]);
+
         return $output;
     }
 
-    private function render_response_readonly(question_attempt $qa, $lines, question_attempt_step $step) {
-        $labelbyid = $qa->get_qt_field_name('answer') . '_label';
-        $responselabel = get_string('answer', 'qtype_sheet');
-        // Check if there is an actual answer 
-        $answer = $qa->get_last_qt_var('answer');
-        if (!$step->has_qt_var('answer')) {
-            $answer = '';
-        }
+    private function render_response_readonly(question_attempt $qa, $question, question_attempt_step $step) {
+        $labelbyid = $qa->get_qt_field_name('spreadsheetdata') . '_label';
+        $answer = $step->get_qt_var('spreadsheetdata') ?: json_encode(array_fill(0, 10, array_fill(0, 10, '')));
 
-        $output = html_writer::tag('h4', $responselabel, ['id' => $labelbyid, 'class' => 'sr-only']);
+        $output = html_writer::tag('h4', get_string('answer', 'qtype_sheet'), ['id' => $labelbyid, 'class' => 'sr-only']);
         $output .= html_writer::tag('div', format_text($answer, FORMAT_HTML), [
             'role' => 'textbox',
             'aria-readonly' => 'true',
             'aria-labelledby' => $labelbyid,
-            'class' => 'qtype_sheet_response readonly', 
-            'style' => 'min-height: ' . ($lines * 1.5) . 'em;',
+            'class' => 'qtype_sheet_response readonly',
+            'style' => 'min-height: 15em;',
         ]);
         return $output;
     }
 }
+// Include Handsontable and HyperFormula CSS and JS files
+global $PAGE;
+$PAGE->requires->css(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.css'));
+$PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.js'));
+$PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/hyperformula.full.min.js'));
