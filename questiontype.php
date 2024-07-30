@@ -55,11 +55,7 @@ class qtype_sheet extends question_type {
 
         $options = new stdClass();
         $options->questionid = $formdata->id;
-        $options->responseformat = 'editor';  
-        $options->responserequired = 1;      
-        $options->responsefieldlines = 10;    
-        $options->responsetemplate = $formdata->responsetemplate['text'];
-        $options->responsetemplateformat = $formdata->responsetemplate['format'];
+        $options->responseformat = $formdata->spreadsheetdata;  
 
         // Insert or update the options record in the database
         if ($DB->record_exists('qtype_sheet_options', ['questionid' => $formdata->id])) {
@@ -72,11 +68,7 @@ class qtype_sheet extends question_type {
 
     protected function initialise_question_instance(question_definition $question, $questiondata) {
         parent::initialise_question_instance($question, $questiondata);
-        $question->responseformat      = isset($questiondata->options->responseformat)      ? $questiondata->options->responseformat      : 'editor';
-        $question->responserequired    = isset($questiondata->options->responserequired)    ? $questiondata->options->responserequired    : 1;
-        $question->responsefieldlines  = isset($questiondata->options->responsefieldlines)  ? $questiondata->options->responsefieldlines  : 10;
-        $question->responsetemplate = $questiondata->options->responsetemplate;
-        $question->responsetemplateformat = $questiondata->options->responsetemplateformat;
+        $question->spreadsheetdata = $questiondata->options->spreadsheetdata;
     }
 
     public function delete_question($questionid, $contextid) {

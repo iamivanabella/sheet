@@ -37,61 +37,47 @@ require_once($CFG->dirroot . '/question/type/questionbase.php');
 class qtype_sheet_question extends question_with_responses {
 
     // Properties:
-    public $responseformat = 'editor';  
-    public $responserequired = 1;      
-    public $responsefieldlines = 10;    
-    public $responsetemplate;          
-    public $responsetemplateformat; 
+    public $spreadsheetdata;
 
     /**
      * @param moodle_page the page we are outputting to.
      * @return qtype_essay_format_renderer_base the response-format-specific renderer.
      */
-    public function get_format_renderer(moodle_page $page) {
-        return $page->get_renderer('qtype_essay', 'format_' . $this->responseformat);
-    }
 
     public function get_expected_data() {
-        return ['answer' => PARAM_RAW, 'answerformat' => PARAM_INT];
+        return ['spreadsheet' => PARAM_RAW];
     }
 
     public function is_complete_response(array $response) {
-        return !empty($response['answer']); 
+        return !empty($response['spreadsheetdata']); 
     }
 
     public function summarise_response(array $response) {
-        return question_utils::to_plain_text($response['answer'], $response['answerformat']); 
+        return question_utils::to_plain_text($response['spreadsheetdata'], FORMAT_HTML); 
     }
 
     public function un_summarise_response(string $summary) {
-        return ['answer' => $summary, 'answerformat' => FORMAT_HTML];
+        return ['spreadsheetdata' => $summary];
     }
 
     public function is_gradable_response(array $response) {
-        return !empty($response['answer']);
+        return !empty($response['spreadsheetdata']);
     }
 
     public function is_same_response(array $prevresponse, array $newresponse) { 
-        $prevAnswer = array_key_exists('answer', $prevresponse) && $prevresponse['answer'] !== $this->responsetemplate 
-            ? (string) $prevresponse['answer'] 
+        $prevAnswer = array_key_exists('spreadsheetdata', $prevresponse) && $prevresponse['spreadsheetdata'] !== $this->spreadsheetdata 
+            ? (string) $prevresponse['spreadsheetdata'] 
             : '';
 
-        $newAnswer = array_key_exists('answer', $newresponse) && $newresponse['answer'] !== $this->responsetemplate 
-            ? (string) $newresponse['answer'] 
+        $newAnswer = array_key_exists('spreadsheetdata', $newresponse) && $newresponse['spreadsheetdata'] !== $this->spreadsheetdata 
+            ? (string) $newresponse['spreadsheetdata'] 
             : '';
-
-            var_dump($prevAnswer);
-            var_dump($newAnswer);
         return $prevAnswer === $newAnswer;
     }
     
     public function get_question_definition_for_external_rendering(question_attempt $qa, question_display_options $options) {
         $settings = [
-            'responseformat' => $this->responseformat,
-            'responserequired' => $this->responserequired,
-            'responsefieldlines' => $this->responsefieldlines,
-            'responsetemplate' => $this->responsetemplate,
-            'responsetemplateformat' => $this->responsetemplateformat,
+            'spreadsheetdata' => $this->spreadsheetdata,
         ];
         return $settings;
     }
