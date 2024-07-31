@@ -61,7 +61,7 @@ class qtype_sheet_renderer extends qtype_renderer {
 
         $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
         $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor', 'class' => 'form-control', 'style' => 'width: 600px; height: 300px;']);
-        $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => $id, 'name' => $inputname, 'value' => s($data)]);
+        $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => 'id_spreadsheetdata', 'name' => $inputname, 'value' => s($data)]);
 
         return $output;
     }

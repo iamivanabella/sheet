@@ -1,11 +1,11 @@
 define(['jquery', 'core/log'], function($, Log) {
     return {
-        init: function() {
+        init: function(data) {
             Log.debug('Initializing Handsontable...');
 
             var container = document.getElementById("spreadsheet-editor");
             var hot = new Handsontable(container, {
-                data: [], // Initial data
+                data: JSON.parse(data.spreadsheetdata), // Load initial data
                 rowHeaders: true,
                 colHeaders: true,
                 rowCount: 20,
@@ -23,9 +23,8 @@ define(['jquery', 'core/log'], function($, Log) {
                 }
             });
 
-            var existingData = document.getElementById("id_spreadsheetdata").value;
-            if (existingData) {
-                hot.loadData(JSON.parse(existingData));
+            if (data.spreadsheetdata) {
+                hot.loadData(JSON.parse(data.spreadsheetdata));
             }
         }
     };
