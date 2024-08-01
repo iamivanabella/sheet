@@ -1,11 +1,15 @@
-define(['jquery', 'core/log'], function($, Log) {
+define(['jquery', 'core/log', 'qtype_sheet/handsontable.full.min', 'qtype_sheet/hyperformula.full.min'], function($, Log, Handsontable, HyperFormula) {
     return {
-        init: function(data) {
+        init: function() {
             Log.debug('Initializing Handsontable...');
-
+        
             var container = document.getElementById("spreadsheet-editor");
+            // spreadsheetdata = JSON.parse(spreadsheetdata);
+            var data = document.getElementById("id_spreadsheetdata").value;
+
+            Log.debug(data);
             var hot = new Handsontable(container, {
-                data: JSON.parse(data.spreadsheetdata), // Load initial data
+                data: JSON.parse(data), // Load initial data
                 rowHeaders: true,
                 colHeaders: true,
                 rowCount: 20,
@@ -18,14 +22,10 @@ define(['jquery', 'core/log'], function($, Log) {
                 licenseKey: "non-commercial-and-evaluation",
                 afterChange: function(changes, source) {
                     if (source !== "loadData") {
-                        document.getElementById("id_spreadsheetdata").value = JSON.stringify(hot.getData());
+                        data = JSON.stringify(hot.getData());
                     }
                 }
             });
-
-            if (data.spreadsheetdata) {
-                hot.loadData(JSON.parse(data.spreadsheetdata));
-            }
         }
     };
 });

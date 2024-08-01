@@ -49,7 +49,7 @@ class qtype_sheet_edit_form extends question_edit_form {
         $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/hyperformula.full.min.js'));
 
         // Include Handsontable initialization script
-        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init', array());
+        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init');
     }
 
     protected function data_preprocessing($question) {

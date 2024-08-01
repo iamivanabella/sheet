@@ -53,15 +53,15 @@ class qtype_sheet_renderer extends qtype_renderer {
 
     private function render_response_input(question_attempt $qa, $question, $step) {
         $inputname = $qa->get_qt_field_name('spreadsheetdata');
-        $id = $inputname . '_id';
-        $data = $step->get_qt_var('spreadsheetdata') ?: json_encode(array_fill(0, 10, array_fill(0, 10, '')));
+        $id = 'id_spreadsheetdata';
+        $data = $question->spreadsheetdata ?: json_encode(array_fill(0, 10, array_fill(0, 10, '')));
 
         global $PAGE;
-        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init', array('spreadsheetdata' => $data));
+        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init');
 
         $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
         $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor', 'class' => 'form-control', 'style' => 'width: 600px; height: 300px;']);
-        $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => 'id_spreadsheetdata', 'name' => $inputname, 'value' => s($data)]);
+        $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => $id, 'name' => $inputname, 'value' => $data]);
 
         return $output;
     }
