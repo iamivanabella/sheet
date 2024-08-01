@@ -30,6 +30,14 @@ class qtype_sheet_renderer extends qtype_renderer {
     protected $displayoptions;
 
     public function formulation_and_controls(question_attempt $qa, question_display_options $options) {
+        global $PAGE;
+
+        // Ensure CSS and JS files are included in the head section.
+        $PAGE->requires->css('/question/type/sheet/style/handsontable.full.css');
+        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/src/handsontable.full.js'));
+        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/src/hyperformula.full.js'));
+        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init');
+
         $question = $qa->get_question();
         $step = $qa->get_last_step_with_qt_var('spreadsheetdata');
         $this->displayoptions = $options;
@@ -56,9 +64,6 @@ class qtype_sheet_renderer extends qtype_renderer {
         $id = 'id_spreadsheetdata';
         $data = $question->spreadsheetdata ?: json_encode(array_fill(0, 10, array_fill(0, 10, '')));
 
-        global $PAGE;
-        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init');
-
         $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
         $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor', 'class' => 'form-control', 'style' => 'width: 600px; height: 300px;']);
         $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => $id, 'name' => $inputname, 'value' => $data]);
@@ -81,8 +86,3 @@ class qtype_sheet_renderer extends qtype_renderer {
         return $output;
     }
 }
-// Include Handsontable and HyperFormula CSS and JS files
-global $PAGE;
-$PAGE->requires->css(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.css'));
-$PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.js'));
-$PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/hyperformula.full.min.js'));

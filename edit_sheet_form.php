@@ -44,9 +44,9 @@ class qtype_sheet_edit_form extends question_edit_form {
         $mform->getElement('spreadsheetdata')->updateAttributes(array('id' => 'id_spreadsheetdata'));
 
         // Include Handsontable CSS and JS files
-        $PAGE->requires->css(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.css'));
-        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/handsontable.full.min.js'));
-        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/build/hyperformula.full.min.js'));
+        $PAGE->requires->css('/question/type/sheet/style/handsontable.full.css');
+        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/src/handsontable.full.js'));
+        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/src/hyperformula.full.js'));
 
         // Include Handsontable initialization script
         $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init');
