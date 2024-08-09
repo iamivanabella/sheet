@@ -30,13 +30,6 @@ class qtype_sheet_renderer extends qtype_renderer {
     protected $displayoptions;
 
     public function formulation_and_controls(question_attempt $qa, question_display_options $options) {
-        global $PAGE;
-
-        // Ensure CSS and JS files are included in the head section.
-        $PAGE->requires->css('/question/type/sheet/style/handsontable.full.css');
-        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/src/handsontable.full.js'));
-        $PAGE->requires->js(new moodle_url('/question/type/sheet/amd/src/hyperformula.full.js'));
-        $PAGE->requires->js_call_amd('qtype_sheet/handsontable_init', 'init');
 
         $question = $qa->get_question();
         $step = $qa->get_last_step_with_qt_var('spreadsheetdata');
@@ -62,11 +55,62 @@ class qtype_sheet_renderer extends qtype_renderer {
     private function render_response_input(question_attempt $qa, $question, $step) {
         $inputname = $qa->get_qt_field_name('spreadsheetdata');
         $id = 'id_spreadsheetdata';
-        $data = $question->spreadsheetdata ?: json_encode(array_fill(0, 10, array_fill(0, 10, '')));
+        $data = $question->spreadsheetdata ?: json_encode(array_fill(0, 26, array_fill(0, 26, '')));
 
         $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
-        $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor', 'class' => 'form-control', 'style' => 'width: 600px; height: 300px;']);
+        $output .= html_writer::start_tag('div', ['class' => 'spreadsheet-container', 'style' => 'height: 400px;']);
+        $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor']);
+        $output .= html_writer::end_tag('div');
         $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => $id, 'name' => $inputname, 'value' => $data]);
+
+        // Include Handsontable CSS from CDN
+        $output .= html_writer::empty_tag('link', ['rel' => 'stylesheet', 'type' => 'text/css', 'href' => 'https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css']);
+        
+        // Include Handsontable JS from CDN
+        $output .= html_writer::tag('script', '', ['src' => 'https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js']);
+        $output .= html_writer::tag('script', '', ['src' => 'https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js']);
+
+        $output .= html_writer::tag('script', '
+            document.addEventListener("DOMContentLoaded", function() {
+                console.log("Initializing Handsontable...");
+
+                var container = document.getElementById("spreadsheet-editor");
+                var dataElement = document.getElementById("id_spreadsheetdata");
+                var data = dataElement ? dataElement.value : "";
+
+                if (data === "") {
+                    data = JSON.stringify(Array(26).fill(Array(26).fill("")));
+                }
+
+                console.log(data);
+
+                try {
+                    var hot = new Handsontable(container, {
+                        data: JSON.parse(data),
+                        rowHeaders: true,
+                        colHeaders: true,
+                        width: "100%",
+                        height: "100%",
+                        rowCount: 26,
+                        colCount: 26,
+                        dropdownMenu: true,
+                        contextMenu: true,
+                        formulas: {
+                            engine: HyperFormula
+                        },
+                        licenseKey: "non-commercial-and-evaluation",
+                        afterChange: function(changes, source) {
+                            if (source !== "loadData") {
+                                data = JSON.stringify(hot.getData());
+                                dataElement.value = data; // Update hidden input value
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error initializing Handsontable:", error);
+                }
+            });
+        ');
 
         return $output;
     }
