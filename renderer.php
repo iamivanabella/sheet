@@ -56,34 +56,41 @@ class qtype_sheet_renderer extends qtype_renderer {
         $inputname = $qa->get_qt_field_name('spreadsheetdata');
         $id = 'id_spreadsheetdata';
         $data = $question->spreadsheetdata ?: json_encode(array_fill(0, 26, array_fill(0, 26, '')));
-
+    
         $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
+
+        // Add a formula bar input field
+        $output .= html_writer::start_tag('div', ['style' => 'margin-bottom: 10px; display: flex; align-items: center;']);
+        $output .= html_writer::tag('label', 'fx', ['style' => 'margin-right: 10px; font-weight: bold;']);
+        $output .= html_writer::empty_tag('input', ['type' => 'text', 'id' => 'formula-bar', 'style' => 'flex: 1;', 'placeholder' => 'Enter formula here...']);
+        $output .= html_writer::end_tag('div');
+
         $output .= html_writer::start_tag('div', ['class' => 'spreadsheet-container', 'style' => 'height: 400px;']);
         $output .= html_writer::tag('div', '', ['id' => 'spreadsheet-editor']);
         $output .= html_writer::end_tag('div');
         $output .= html_writer::empty_tag('input', ['type' => 'hidden', 'id' => $id, 'name' => $inputname, 'value' => $data]);
-
+    
         // Include Handsontable CSS from CDN
         $output .= html_writer::empty_tag('link', ['rel' => 'stylesheet', 'type' => 'text/css', 'href' => 'https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css']);
         
         // Include Handsontable JS from CDN
         $output .= html_writer::tag('script', '', ['src' => 'https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js']);
         $output .= html_writer::tag('script', '', ['src' => 'https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js']);
-
+    
+        // Include Handsontable initialization script
         $output .= html_writer::tag('script', '
             document.addEventListener("DOMContentLoaded", function() {
-                console.log("Initializing Handsontable...");
-
                 var container = document.getElementById("spreadsheet-editor");
+                var formulaBar = document.getElementById("formula-bar");
                 var dataElement = document.getElementById("id_spreadsheetdata");
                 var data = dataElement ? dataElement.value : "";
-
+    
                 if (data === "") {
                     data = JSON.stringify(Array(26).fill(Array(26).fill("")));
                 }
-
-                console.log(data);
-
+    
+                var selectedCell = null;
+    
                 try {
                     var hot = new Handsontable(container, {
                         data: JSON.parse(data),
@@ -94,26 +101,65 @@ class qtype_sheet_renderer extends qtype_renderer {
                         rowCount: 26,
                         colCount: 26,
                         dropdownMenu: true,
-                        contextMenu: true,
+                        contextMenu: ["copy", "cut", "paste"], // Limit context menu to basic clipboard actions
+                        allowInsertRow: false,
+                        allowInsertColumn: false,
+                        allowRemoveRow: false,
+                        allowRemoveColumn: false,
                         formulas: {
                             engine: HyperFormula
                         },
                         licenseKey: "non-commercial-and-evaluation",
                         afterChange: function(changes, source) {
                             if (source !== "loadData") {
-                                data = JSON.stringify(hot.getData());
+                                data = JSON.stringify(hot.getSourceData());
                                 dataElement.value = data; // Update hidden input value
+                                console.log("Data updated in Handsontable:", data);
                             }
+                        },
+                        afterSelection: function(r, c) {
+                            selectedCell = { row: r, col: c };
+                            const cellValue = hot.getSourceDataAtCell(r, c); // Get formula or value of the selected cell
+                            formulaBar.value = cellValue || ""; // Update formula bar
+                            console.log("Cell selected:", selectedCell, "Value:", cellValue);
                         }
                     });
+    
+                    // Log when the formula bar is focused after selecting a cell
+                    formulaBar.addEventListener("focus", function(event) {
+                        if (selectedCell) {
+                            console.log("Input to update this cell:", selectedCell);
+                        } else {
+                            console.log("No cell selected when formula bar is focused.");
+                        }
+                    });
+    
+                    // Update cell content as the user types in the formula bar
+                    formulaBar.addEventListener("input", function(event) {
+                        if (selectedCell) {
+                            hot.setDataAtCell(selectedCell.row, selectedCell.col, formulaBar.value);
+                            console.log("Formula bar input:", formulaBar.value, "Updated cell:", selectedCell);
+                        } else {
+                            console.log("No cell selected when typing in the formula bar.");
+                        }
+                    });
+    
+                    // Prevent form submission or page refresh on Enter key in the formula bar
+                    formulaBar.addEventListener("keydown", function(event) {
+                        if (event.key === "Enter") {
+                            event.preventDefault();
+                            console.log("Enter key pressed in formula bar");
+                        }
+                    });
+    
                 } catch (error) {
                     console.error("Error initializing Handsontable:", error);
                 }
             });
         ');
-
+    
         return $output;
-    }
+    }    
 
     private function render_response_readonly(question_attempt $qa, $question, question_attempt_step $step) {
         $labelbyid = $qa->get_qt_field_name('spreadsheetdata') . '_label';
