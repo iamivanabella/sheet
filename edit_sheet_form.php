@@ -33,8 +33,17 @@ defined('MOODLE_INTERNAL') || die();
 class qtype_sheet_edit_form extends question_edit_form {
 
     protected function definition_inner($mform) {
-        global $PAGE; // Ensure $PAGE is available
-    
+        global $PAGE;
+
+        // Add the toolbar with formatting buttons using SVG icons
+        $mform->addElement('html', html_writer::start_tag('div', ['class' => 'toolbar', 'style' => 'margin-bottom: 10px; display: flex; align-items: center; gap: 10px;']));
+        
+        $mform->addElement('html', '<button type="button" id="bold-btn" title="Bold" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/bold.svg') . '" alt="Bold" class="toolbar-icon"></button>');
+        $mform->addElement('html', '<button type="button" id="italic-btn" title="Italic" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/italic.svg') . '" alt="Italic" class="toolbar-icon"></button>');
+        $mform->addElement('html', '<button type="button" id="underline-btn" title="Underline" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/underline.svg') . '" alt="Underline" class="toolbar-icon"></button>');
+        // Add more buttons with appropriate SVGs as needed
+        $mform->addElement('html', html_writer::end_tag('div'));
+            
         // Add the formula bar with a label
         $mform->addElement('html', html_writer::start_tag('div', ['style' => 'margin-bottom: 10px; display: flex; align-items: center;']));
         $mform->addElement('html', '<label for="formula-bar" style="margin-right: 10px; font-weight: bold;">fx</label>');
@@ -48,7 +57,7 @@ class qtype_sheet_edit_form extends question_edit_form {
     
         // Hidden field to store spreadsheet data
         $mform->addElement('hidden', 'spreadsheetdata');
-        $mform->setType('spreadsheetdata', PARAM_RAW); // Allow HTML content
+        $mform->setType('spreadsheetdata', PARAM_RAW);
         $mform->getElement('spreadsheetdata')->updateAttributes(array('id' => 'id_spreadsheetdata'));
     
         // Include Handsontable CSS and JS files
@@ -60,43 +69,219 @@ class qtype_sheet_edit_form extends question_edit_form {
         $mform->addElement('html', '
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
+                    let selectedCell = null;
+
                     var container = document.getElementById("spreadsheet-editor");
                     var formulaBar = document.getElementById("formula-bar");
                     var dataElement = document.getElementById("id_spreadsheetdata");
-                    var data = dataElement ? dataElement.value : "";
-    
-                    if (data === "") {
-                        data = JSON.stringify(Array(26).fill(Array(26).fill("")));
+                    var storedData = dataElement ? JSON.parse(dataElement.value) : { data: [], meta: [] };
+
+                    var data = storedData.data.length > 0 ? storedData.data : Array(26).fill(Array(26).fill(""));
+                    var meta = storedData.meta || [];
+
+                    console.log("Loaded data:", storedData);
+
+                    class IRRPlugin extends HyperFormula.FunctionPlugin {
+                        static implementedFunctions = {
+                            "IRR": {
+                                method: "irr",
+                                parameters: [
+                                    { argumentType: HyperFormula.FunctionArgumentType.RANGE},
+                                    { argumentType: HyperFormula.FunctionArgumentType.NUMBER, optionalArg: true }
+                                ],
+                            },
+                        };
+
+                        irr(ast, state) {
+                            try {
+                                console.log("Starting IRR calculation with AST:", ast);
+
+                                const cashFlows = this.evaluateAst(ast.args[0], state);
+                                const guess = ast.args[1] ? this.evaluateAst(ast.args[1], state) : 0.1;
+
+                                const flatCashFlows = cashFlows.data.flat();
+
+                                if (flatCashFlows.length === 0) {
+                                    throw new Error("Invalid cash flow data provided to IRR function.");
+                                }
+
+                                console.log("Flattened cash flows for IRR:", flatCashFlows);
+                                console.log("Initial guess for IRR:", guess);
+
+                                const hasPositive = flatCashFlows.some(value => value > 0);
+                                const hasNegative = flatCashFlows.some(value => value < 0);
+
+                                if (!hasPositive || !hasNegative) {
+                                    console.error("Cash flows must include both positive and negative values.");
+                                    return HyperFormula.ErrorType.NUM;
+                                }
+                                return this.calculateIRR(flatCashFlows, guess);
+                                
+                            } catch (error) {
+                                console.error("Error during IRR calculation:", error);
+                                return HyperFormula.ErrorType.NUM; 
+                            }
+                        }
+
+                        calculateIRR(cashFlows, guess) {
+                            const maxIterations = 1000;
+                            const precision = 1e-7;
+                            let irr = guess;
+
+                            for (let i = 0; i < maxIterations; i++) {
+                                const npv = cashFlows.reduce((acc, cashFlow, period) => acc + cashFlow / Math.pow(1 + irr, period), 0);
+                                const npvDerivative = cashFlows.reduce((acc, cashFlow, period) => acc - period * cashFlow / Math.pow(1 + irr, period + 1), 0);
+
+                                if (npvDerivative === 0) {
+                                    console.warn("Division by zero encountered in IRR calculation. Adjusting IRR value to continue.");
+                                    irr += 0.01;
+                                    continue;
+                                }
+
+                                const newIRR = irr - npv / npvDerivative;
+                                console.log(`Iteration ${i + 1}: IRR = ${irr}, NPV = ${npv}, IRR Derivative = ${npvDerivative}`);
+
+                                if (Math.abs(newIRR - irr) < precision) {
+                                    console.log("IRR converged to:", newIRR.toFixed(2));
+                                    return newIRR.toFixed(2);
+                                }
+
+                                irr = newIRR;
+                            }
+
+                            console.warn("Max iterations reached in IRR calculation. Returning last computed IRR:", irr.toFixed(2));
+                            return irr.toFixed(2);
+                        } 
                     }
-    
-                    var selectedCell = null;
+
+                    HyperFormula.registerFunctionPlugin(IRRPlugin, {
+                        enGB: {
+                            IRR: "IRR",
+                        },
+                    });
+
+                    const hyperformulaInstance = HyperFormula.buildEmpty({
+                        licenseKey: "gpl-v3",
+                    });
     
                     var hot = new Handsontable(container, {
-                        data: JSON.parse(data),
+                        data: data,
                         rowHeaders: true,
                         colHeaders: true,
                         width: "100%",
                         height: "100%",
                         rowCount: 26,
                         colCount: 26,
-                        dropdownMenu: true,
-                        contextMenu: true,
+                        dropdownMenu: ["alignment"], 
+                        contextMenu: ["copy", "cut", "paste", "alignment", "readOnly"], 
                         formulas: {
-                            engine: HyperFormula
+                            engine: hyperformulaInstance,
                         },
                         licenseKey: "non-commercial-and-evaluation",
+                        cells: function(row, col) {
+                            var cellProperties = {};
+                            meta.forEach(function(metaItem) {
+                                if (metaItem.row === row && metaItem.col === col) {
+                                    if (metaItem.readOnly) {
+                                        cellProperties.readOnly = true;
+                                        console.log("Applying read-only to cell:", { row: row, col: col });
+                                    }
+                                    if (metaItem.className) {
+                                        cellProperties.className = metaItem.className;
+                                        console.log("Applying alignment to cell:", { row: row, col: col, alignment: metaItem.className });
+                                    }
+                                }
+                            });
+                            return cellProperties;
+                        },
+                        afterSetCellMeta: function(row, col, key, value) {
+                            if (key === "readOnly" || key === "className") {
+                                meta = meta.filter(function(metaItem) {
+                                    return !(metaItem.row === row && metaItem.col === col && metaItem[key]);
+                                });
+
+                                if (value !== false && value !== "") {
+                                    var newMeta = { row: row, col: col };
+                                    newMeta[key] = value;
+                                    meta.push(newMeta);
+                                    console.log(key + " set for cell:", newMeta);
+                                }
+
+                                var dataToStore = {
+                                    data: hot.getSourceData(),
+                                    meta: meta,
+                                };
+
+                                dataElement.value = JSON.stringify(dataToStore);
+                                console.log("Updated data with meta:", dataToStore);
+
+                                if (key === "readOnly") {
+                                    var cellProperties = hot.getCellMeta(row, col);
+                                    if (cellProperties.readOnly) {
+                                        formulaBar.disabled = true;
+                                        console.log("Formula bar disabled for read-only cell:", { row: row, col: col });
+                                    } else {
+                                        formulaBar.disabled = false;
+                                        console.log("Formula bar enabled for editable cell:", { row: row, col: col });
+                                    }
+                                }
+                            }
+                        },
                         afterChange: function(changes, source) {
                             if (source !== "loadData") {
-                                const formulaData = hot.getSourceData(); 
-                                dataElement.value = JSON.stringify(formulaData); // Update hidden input value with the formulas
-                                console.log("Data updated in Handsontable:", formulaData);
+                                var formulaData = hot.getSourceData();
+                                var dataToStore = {
+                                    data: formulaData,
+                                    meta: meta,
+                                };
+                                dataElement.value = JSON.stringify(dataToStore);
+                                console.log("Data and meta stored:", dataToStore);
                             }
                         },
                         afterSelection: function(r, c) {
+                            var cellProperties = hot.getCellMeta(r, c);
+                            var cellValue = hot.getSourceDataAtCell(r, c);
+
+                            formulaBar.value = cellValue || "";
+
+                            if (cellProperties.readOnly) {
+                                formulaBar.disabled = true;
+                                console.log("Formula bar disabled for read-only cell:", { row: r, col: c });
+                            } else {
+                                formulaBar.disabled = false;
+                                console.log("Formula bar enabled for editable cell:", { row: r, col: c });
+                            }
+
+                            console.log("Cell selected:", { row: r, col: c, value: cellValue, readOnly: cellProperties.readOnly });
                             selectedCell = { row: r, col: c };
-                            const cellValue = hot.getSourceDataAtCell(r, c); // Get formula or value of the selected cell
-                            formulaBar.value = cellValue || ""; // Update formula bar
-                            console.log("Cell selected:", selectedCell, "Value:", cellValue);
+                        },
+                    });
+
+                    // Toolbar button actions
+                    document.getElementById("bold-btn").addEventListener("click", function() {
+                        if (selectedCell) {
+                            let className = hot.getCellMeta(selectedCell.row, selectedCell.col).className || "";
+                            className = className.includes("htBold") ? className.replace("htBold", "") : className + " htBold";
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "className", className.trim());
+                            hot.render(); // Re-render the table to apply the class
+                        }
+                    });
+
+                    document.getElementById("italic-btn").addEventListener("click", function() {
+                        if (selectedCell) {
+                            let className = hot.getCellMeta(selectedCell.row, selectedCell.col).className || "";
+                            className = className.includes("htItalic") ? className.replace("htItalic", "") : className + " htItalic";
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "className", className.trim());
+                            hot.render();
+                        }
+                    });
+
+                    document.getElementById("underline-btn").addEventListener("click", function() {
+                        if (selectedCell) {
+                            let className = hot.getCellMeta(selectedCell.row, selectedCell.col).className || "";
+                            className = className.includes("htUnderline") ? className.replace("htUnderline", "") : className + " htUnderline";
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "className", className.trim());
+                            hot.render();
                         }
                     });
     
@@ -140,7 +325,7 @@ class qtype_sheet_edit_form extends question_edit_form {
                 });
             </script>
         ');
-    }  
+    }
     
     protected function data_preprocessing($question) {
         $question = parent::data_preprocessing($question);
@@ -150,7 +335,10 @@ class qtype_sheet_edit_form extends question_edit_form {
             $question->spreadsheetdata = $question->options->spreadsheetdata;
         } else {
             // Set default response template if none exists (for new questions)
-            $question->spreadsheetdata = json_encode(array_fill(0, 26, array_fill(0, 26, '')));
+            $question->spreadsheetdata = json_encode([
+                'data' => array_fill(0, 26, array_fill(0, 26, '')),
+                'meta' => []
+            ]);
         }
 
         return $question;

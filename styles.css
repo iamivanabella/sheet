@@ -9,3 +9,53 @@
 .que.sheet .qtype_sheet_response.readonly { /* For readonly mode */
     background-color: white;
 }
+
+.htBold {
+    font-weight: bold;
+}
+
+.htItalic {
+    font-style: italic;
+}
+
+.htUnderline {
+    text-decoration: underline;
+}
+
+.toolbar {
+    background-color: #f4f4f4;
+    border-radius: 5px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toolbar-btn {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.toolbar-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.toolbar-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 24px;
+    background-color: #ccc;
+    margin: 0 10px;
+}
+
+.htTextColor {
+    color: inherit !important;
+}

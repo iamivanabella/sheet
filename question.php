@@ -45,7 +45,7 @@ class qtype_sheet_question extends question_with_responses {
      */
 
     public function get_expected_data() {
-        return ['spreadsheet' => PARAM_RAW];
+        return ['spreadsheetdata' => PARAM_RAW];
     }
 
     public function is_complete_response(array $response) {
@@ -53,6 +53,9 @@ class qtype_sheet_question extends question_with_responses {
     }
 
     public function summarise_response(array $response) {
+        if (empty($response['spreadsheetdata'])) {
+            return question_utils::to_plain_text($this->spreadsheetdata, FORMAT_HTML);
+        }
         return question_utils::to_plain_text($response['spreadsheetdata'], FORMAT_HTML); 
     }
 
@@ -61,7 +64,7 @@ class qtype_sheet_question extends question_with_responses {
     }
 
     public function is_gradable_response(array $response) {
-        return !empty($response['spreadsheetdata']);
+        return !empty($response['spreadsheetdata']) || !empty($this->spreadsheetdata);
     }
 
     public function is_same_response(array $prevresponse, array $newresponse) { 
@@ -76,10 +79,18 @@ class qtype_sheet_question extends question_with_responses {
     }
     
     public function get_question_definition_for_external_rendering(question_attempt $qa, question_display_options $options) {
-        $settings = [
-            'spreadsheetdata' => $this->spreadsheetdata,
+        $response = $qa->get_last_qt_data();
+        if (!isset($response['spreadsheetdata']) || empty($response['spreadsheetdata'])) {
+            // No student response, use the template provided by the teacher
+            $spreadsheetdata = $this->spreadsheetdata;
+        } else {
+            // Use the student's response
+            $spreadsheetdata = $response['spreadsheetdata'];
+        }
+
+        return [
+            'spreadsheetdata' => $spreadsheetdata
         ];
-        return $settings;
     }
 
     public function get_correct_response() {
@@ -89,4 +100,5 @@ class qtype_sheet_question extends question_with_responses {
     public function make_behaviour(question_attempt $qa, $preferredbehaviour) {
         return question_engine::make_behaviour('manualgraded', $qa, $preferredbehaviour);
     }
+
 }
