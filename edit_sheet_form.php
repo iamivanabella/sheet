@@ -72,16 +72,6 @@ class qtype_sheet_edit_form extends question_edit_form {
         $mform->addElement('html', '
             <script>
                 document.addEventListener("DOMContentLoaded", function() {
-                    let selectedCell = null;
-
-                    var container = document.getElementById("spreadsheet-editor");
-                    var formulaBar = document.getElementById("formula-bar");
-                    var dataElement = document.getElementById("id_spreadsheetdata");
-                    var storedData = dataElement ? JSON.parse(dataElement.value) : { data: [], meta: [] };
-
-                    var data = storedData.data.length > 0 ? storedData.data : Array(26).fill(Array(26).fill(""));
-                    var meta = storedData.meta || [];
-
                     class IRRPlugin extends HyperFormula.FunctionPlugin {
                         static implementedFunctions = {
                             "IRR": {
@@ -157,6 +147,16 @@ class qtype_sheet_edit_form extends question_edit_form {
                     const hyperformulaInstance = HyperFormula.buildEmpty({
                         licenseKey: "gpl-v3",
                     });
+
+                    let selectedCell = null;
+
+                    var container = document.getElementById("spreadsheet-editor");
+                    var formulaBar = document.getElementById("formula-bar");
+                    var dataElement = document.getElementById("id_spreadsheetdata");
+                    var storedData = dataElement ? JSON.parse(dataElement.value) : { data: [], meta: [] };
+
+                    var data = storedData.data.length > 0 ? storedData.data : Array(26).fill(Array(26).fill(""));
+                    var meta = storedData.meta || [];
     
                     var hot = new Handsontable(container, {
                         data: data,
@@ -226,12 +226,8 @@ class qtype_sheet_edit_form extends question_edit_form {
                         },
                         afterChange: function(changes, source) {
                             if (source !== "loadData") {
-                                var formulaData = hot.getSourceData();
-                                var dataToStore = {
-                                    data: formulaData,
-                                    meta: meta,
-                                };
-                                dataElement.value = JSON.stringify(dataToStore);
+                                data = hot.getSourceData();
+                                dataElement.value = JSON.stringify({data: data, meta: meta}); // Store both data and meta
                             }
                         },
                         afterSelection: function(r, c) {
