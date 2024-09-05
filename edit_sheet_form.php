@@ -41,7 +41,10 @@ class qtype_sheet_edit_form extends question_edit_form {
         $mform->addElement('html', '<button type="button" id="bold-btn" title="Bold" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/bold.svg') . '" alt="Bold" class="toolbar-icon"></button>');
         $mform->addElement('html', '<button type="button" id="italic-btn" title="Italic" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/italic.svg') . '" alt="Italic" class="toolbar-icon"></button>');
         $mform->addElement('html', '<button type="button" id="underline-btn" title="Underline" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/underline.svg') . '" alt="Underline" class="toolbar-icon"></button>');
-        // Add more buttons with appropriate SVGs as needed
+        
+        $mform->addElement('html', '<div class="toolbar-separator"></div>');
+        $mform->addElement('html', '<div style="position: relative;"><button type="button" id="text-color-btn" title="Text Color" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/text-color.svg') . '" alt="Text Color" class="toolbar-icon"></button><input type="color" id="text-color-picker" style="position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;"></div>');
+        $mform->addElement('html', '<div style="position: relative;"><button type="button" id="fill-color-btn" title="Fill Color" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/fill-color.svg') . '" alt="Fill Color" class="toolbar-icon"></button><input type="color" id="fill-color-picker" style="position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;"></div>');
         $mform->addElement('html', html_writer::end_tag('div'));
             
         // Add the formula bar with a label
@@ -79,8 +82,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                     var data = storedData.data.length > 0 ? storedData.data : Array(26).fill(Array(26).fill(""));
                     var meta = storedData.meta || [];
 
-                    console.log("Loaded data:", storedData);
-
                     class IRRPlugin extends HyperFormula.FunctionPlugin {
                         static implementedFunctions = {
                             "IRR": {
@@ -94,8 +95,6 @@ class qtype_sheet_edit_form extends question_edit_form {
 
                         irr(ast, state) {
                             try {
-                                console.log("Starting IRR calculation with AST:", ast);
-
                                 const cashFlows = this.evaluateAst(ast.args[0], state);
                                 const guess = ast.args[1] ? this.evaluateAst(ast.args[1], state) : 0.1;
 
@@ -104,9 +103,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                                 if (flatCashFlows.length === 0) {
                                     throw new Error("Invalid cash flow data provided to IRR function.");
                                 }
-
-                                console.log("Flattened cash flows for IRR:", flatCashFlows);
-                                console.log("Initial guess for IRR:", guess);
 
                                 const hasPositive = flatCashFlows.some(value => value > 0);
                                 const hasNegative = flatCashFlows.some(value => value < 0);
@@ -139,10 +135,8 @@ class qtype_sheet_edit_form extends question_edit_form {
                                 }
 
                                 const newIRR = irr - npv / npvDerivative;
-                                console.log(`Iteration ${i + 1}: IRR = ${irr}, NPV = ${npv}, IRR Derivative = ${npvDerivative}`);
 
                                 if (Math.abs(newIRR - irr) < precision) {
-                                    console.log("IRR converged to:", newIRR.toFixed(2));
                                     return newIRR.toFixed(2);
                                 }
 
@@ -184,18 +178,23 @@ class qtype_sheet_edit_form extends question_edit_form {
                                 if (metaItem.row === row && metaItem.col === col) {
                                     if (metaItem.readOnly) {
                                         cellProperties.readOnly = true;
-                                        console.log("Applying read-only to cell:", { row: row, col: col });
                                     }
                                     if (metaItem.className) {
                                         cellProperties.className = metaItem.className;
-                                        console.log("Applying alignment to cell:", { row: row, col: col, alignment: metaItem.className });
+                                    }
+                                    if (metaItem.style) {
+                                        cellProperties.renderer = function(hotInstance, td, row, col, prop, value, cellProperties) {
+                                            Handsontable.renderers.TextRenderer.apply(this, arguments);
+                                            td.style.color = metaItem.style.color || "";
+                                            td.style.backgroundColor = metaItem.style.backgroundColor || "";
+                                        };
                                     }
                                 }
                             });
                             return cellProperties;
                         },
                         afterSetCellMeta: function(row, col, key, value) {
-                            if (key === "readOnly" || key === "className") {
+                            if (key === "readOnly" || key === "className" || key === "style") {
                                 meta = meta.filter(function(metaItem) {
                                     return !(metaItem.row === row && metaItem.col === col && metaItem[key]);
                                 });
@@ -204,7 +203,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                                     var newMeta = { row: row, col: col };
                                     newMeta[key] = value;
                                     meta.push(newMeta);
-                                    console.log(key + " set for cell:", newMeta);
                                 }
 
                                 var dataToStore = {
@@ -213,18 +211,17 @@ class qtype_sheet_edit_form extends question_edit_form {
                                 };
 
                                 dataElement.value = JSON.stringify(dataToStore);
-                                console.log("Updated data with meta:", dataToStore);
 
                                 if (key === "readOnly") {
                                     var cellProperties = hot.getCellMeta(row, col);
                                     if (cellProperties.readOnly) {
                                         formulaBar.disabled = true;
-                                        console.log("Formula bar disabled for read-only cell:", { row: row, col: col });
                                     } else {
                                         formulaBar.disabled = false;
-                                        console.log("Formula bar enabled for editable cell:", { row: row, col: col });
                                     }
                                 }
+
+                                
                             }
                         },
                         afterChange: function(changes, source) {
@@ -235,7 +232,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                                     meta: meta,
                                 };
                                 dataElement.value = JSON.stringify(dataToStore);
-                                console.log("Data and meta stored:", dataToStore);
                             }
                         },
                         afterSelection: function(r, c) {
@@ -246,13 +242,9 @@ class qtype_sheet_edit_form extends question_edit_form {
 
                             if (cellProperties.readOnly) {
                                 formulaBar.disabled = true;
-                                console.log("Formula bar disabled for read-only cell:", { row: r, col: c });
                             } else {
                                 formulaBar.disabled = false;
-                                console.log("Formula bar enabled for editable cell:", { row: r, col: c });
                             }
-
-                            console.log("Cell selected:", { row: r, col: c, value: cellValue, readOnly: cellProperties.readOnly });
                             selectedCell = { row: r, col: c };
                         },
                     });
@@ -284,6 +276,26 @@ class qtype_sheet_edit_form extends question_edit_form {
                             hot.render();
                         }
                     });
+
+                    // Font Color Picker action with change event
+                    document.getElementById("text-color-picker").addEventListener("change", function(event) {
+                        if (selectedCell) {
+                            let currentStyle = hot.getCellMeta(selectedCell.row, selectedCell.col).style || {};
+                            currentStyle.color = event.target.value;
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "style", currentStyle);
+                            hot.render();
+                        }
+                    });
+
+                    // Background Fill Color Picker action with change event
+                    document.getElementById("fill-color-picker").addEventListener("change", function(event) {
+                        if (selectedCell) {
+                            let currentStyle = hot.getCellMeta(selectedCell.row, selectedCell.col).style || {};
+                            currentStyle.backgroundColor = event.target.value;
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "style", currentStyle);
+                            hot.render();
+                        }
+                    });
     
                     // Monitor the editor input directly for accurate real-time updates
                     Handsontable.hooks.add("afterBeginEditing", function(row, column) {
@@ -291,17 +303,7 @@ class qtype_sheet_edit_form extends question_edit_form {
                         if (editor && editor.TEXTAREA) {
                             editor.TEXTAREA.addEventListener("input", function() {
                                 formulaBar.value = editor.TEXTAREA.value;
-                                console.log("Editor input:", editor.TEXTAREA.value);
                             });
-                        }
-                    });
-    
-                    // Log when the formula bar is focused after selecting a cell
-                    formulaBar.addEventListener("focus", function(event) {
-                        if (selectedCell) {
-                            console.log("Input to update this cell:", selectedCell);
-                        } else {
-                            console.log("No cell selected when formula bar is focused.");
                         }
                     });
     
@@ -309,9 +311,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                     formulaBar.addEventListener("input", function(event) {
                         if (selectedCell) {
                             hot.setDataAtCell(selectedCell.row, selectedCell.col, formulaBar.value);
-                            console.log("Formula bar input:", formulaBar.value, "Updated cell:", selectedCell);
-                        } else {
-                            console.log("No cell selected when typing in the formula bar.");
                         }
                     });
     
@@ -319,7 +318,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                     formulaBar.addEventListener("keydown", function(event) {
                         if (event.key === "Enter") {
                             event.preventDefault();
-                            console.log("Enter key pressed in formula bar");
                         }
                     });
                 });
