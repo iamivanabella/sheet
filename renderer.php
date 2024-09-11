@@ -79,6 +79,18 @@ class qtype_sheet_renderer extends qtype_renderer {
         $output .= html_writer::empty_tag('input', ['type' => 'color', 'id' => 'fill-color-picker', 'style' => 'position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;']);
         $output .= html_writer::end_tag('div');
 
+        $output .= html_writer::tag('div', '', ['class' => 'toolbar-separator']);
+
+        // Add Alignment Dropdown Button
+        $output .= html_writer::start_tag('div', ['class' => 'dropdown', 'style' => 'position: relative; display: inline-block;']);
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-left.svg') . '" alt="Align Left" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-dropdown-btn', 'title' => 'Align', 'class' => 'toolbar-btn dropdown-toggle']);
+        $output .= html_writer::start_tag('div', ['class' => 'dropdown-content', 'style' => 'display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #ccc; z-index: 1000;']);
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-left.svg') . '" alt="Align Left" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-left-btn', 'title' => 'Align Left', 'class' => 'toolbar-btn', 'style' => 'display: block;']);
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-center.svg') . '" alt="Align Center" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-center-btn', 'title' => 'Align Center', 'class' => 'toolbar-btn', 'style' => 'display: block;']);
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-right.svg') . '" alt="Align Right" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-right-btn', 'title' => 'Align Right', 'class' => 'toolbar-btn', 'style' => 'display: block;']);
+        $output .= html_writer::end_tag('div');
+        $output .= html_writer::end_tag('div');
+
         $output .= html_writer::end_tag('div');
 
         // Add the formula bar with a label
@@ -197,8 +209,8 @@ class qtype_sheet_renderer extends qtype_renderer {
                     height: "100%",
                     rowCount: 26,
                     colCount: 26,
-                    dropdownMenu: ["alignment"],
-                    contextMenu: ["copy", "cut", "paste", "alignment"],
+                    // dropdownMenu: ["alignment"],
+                    contextMenu: ["copy", "cut", "paste"],
                     allowInsertRow: false,
                     allowInsertColumn: false,
                     allowRemoveRow: false,
@@ -319,6 +331,36 @@ class qtype_sheet_renderer extends qtype_renderer {
                     }
                 });
 
+                // Alignment Dropdown Button Actions
+                document.getElementById("align-dropdown-btn").addEventListener("click", function() {
+                    const dropdownContent = this.nextElementSibling;
+                    dropdownContent.style.display = dropdownContent.style.display === "none" ? "flex" : "none";
+                });
+
+                document.getElementById("align-left-btn").addEventListener("click", function() {
+                    if (selectedCell) {
+                        hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htLeft");
+                        hot.render();
+                        console.log("Alignment set to left for cell:", selectedCell);
+                    }
+                });
+
+                document.getElementById("align-center-btn").addEventListener("click", function() {
+                    if (selectedCell) {
+                        hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htCenter");
+                        hot.render();
+                        console.log("Alignment set to center for cell:", selectedCell);
+                    }
+                });
+
+                document.getElementById("align-right-btn").addEventListener("click", function() {
+                    if (selectedCell) {
+                        hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htRight");
+                        hot.render();
+                        console.log("Alignment set to right for cell:", selectedCell);
+                    }
+                });
+
                 // Monitor the editor input directly for accurate real-time updates
                 Handsontable.hooks.add("afterBeginEditing", function(row, column) {
                     var editor = hot.getActiveEditor();
@@ -362,7 +404,7 @@ class qtype_sheet_renderer extends qtype_renderer {
         // Add a formula bar input field (disabled)
         $output .= html_writer::start_tag('div', ['style' => 'margin-bottom: 10px; display: flex; align-items: center;']);
         $output .= html_writer::tag('label', 'fx', ['style' => 'margin-right: 10px; font-weight: bold;']);
-        $output .= html_writer::empty_tag('input', ['type' => 'text', 'id' => 'formula-bar', 'style' => 'flex: 1;', 'placeholder' => 'Enter formula here...', 'disabled' => 'disabled']);
+        $output .= html_writer::empty_tag('input', ['type' => 'text', 'id' => 'formula-bar', 'style' => 'flex: 1;', 'disabled' => 'disabled']);
         $output .= html_writer::end_tag('div');
 
         $output .= html_writer::start_tag('div', ['class' => 'spreadsheet-container', 'style' => 'height: 400px;']);

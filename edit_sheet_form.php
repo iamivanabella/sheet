@@ -45,6 +45,19 @@ class qtype_sheet_edit_form extends question_edit_form {
         $mform->addElement('html', '<div class="toolbar-separator"></div>');
         $mform->addElement('html', '<div style="position: relative;"><button type="button" id="text-color-btn" title="Text Color" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/text-color.svg') . '" alt="Text Color" class="toolbar-icon"></button><input type="color" id="text-color-picker" style="position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;"></div>');
         $mform->addElement('html', '<div style="position: relative;"><button type="button" id="fill-color-btn" title="Fill Color" class="toolbar-btn"><img src="' . new moodle_url('/question/type/sheet/svgs/compressed/fill-color.svg') . '" alt="Fill Color" class="toolbar-icon"></button><input type="color" id="fill-color-picker" style="position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;"></div>');
+        
+        $mform->addElement('html', '<div class="toolbar-separator"></div>');
+
+        // Add Alignment Dropdown Button
+        $mform->addElement('html', html_writer::start_tag('div', ['class' => 'dropdown', 'style' => 'position: relative; display: inline-block;']));
+        $mform->addElement('html', html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-left.svg') . '" alt="Align Left" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-dropdown-btn', 'title' => 'Align', 'class' => 'toolbar-btn dropdown-toggle']));
+        $mform->addElement('html', html_writer::start_tag('div', ['class' => 'dropdown-content', 'style' => 'display: none; position: absolute; top: 100%; left: 0px; border: 1px solid #ccc; background: white; z-index: 1000;']));
+        $mform->addElement('html', html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-left.svg') . '" alt="Align Left" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-left-btn', 'title' => 'Align Left', 'class' => 'toolbar-btn', 'style' => 'display: block;']));
+        $mform->addElement('html', html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-center.svg') . '" alt="Align Center" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-center-btn', 'title' => 'Align Center', 'class' => 'toolbar-btn', 'style' => 'display: block;']));
+        $mform->addElement('html', html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/align-right.svg') . '" alt="Align Right" class="toolbar-icon">', ['type' => 'button', 'id' => 'align-right-btn', 'title' => 'Align Right', 'class' => 'toolbar-btn', 'style' => 'display: block;']));
+        $mform->addElement('html', html_writer::end_tag('div')); // Close the dropdown-menu
+        $mform->addElement('html', html_writer::end_tag('div')); // Close the dropdown div
+
         $mform->addElement('html', html_writer::end_tag('div'));
             
         // Add the formula bar with a label
@@ -220,8 +233,6 @@ class qtype_sheet_edit_form extends question_edit_form {
                                         formulaBar.disabled = false;
                                     }
                                 }
-
-                                
                             }
                         },
                         afterChange: function(changes, source) {
@@ -290,6 +301,36 @@ class qtype_sheet_edit_form extends question_edit_form {
                             currentStyle.backgroundColor = event.target.value;
                             hot.setCellMeta(selectedCell.row, selectedCell.col, "style", currentStyle);
                             hot.render();
+                        }
+                    });
+
+                    // Alignment Dropdown Button Actions
+                    document.getElementById("align-dropdown-btn").addEventListener("click", function() {
+                        const dropdownContent = this.nextElementSibling;
+                        dropdownContent.style.display = dropdownContent.style.display === "none" ? "flex" : "none";
+                    });
+
+                    document.getElementById("align-left-btn").addEventListener("click", function() {
+                        if (selectedCell) {
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htLeft");
+                            hot.render();
+                            console.log("Alignment set to left for cell:", selectedCell);
+                        }
+                    });
+
+                    document.getElementById("align-center-btn").addEventListener("click", function() {
+                        if (selectedCell) {
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htCenter");
+                            hot.render();
+                            console.log("Alignment set to center for cell:", selectedCell);
+                        }
+                    });
+
+                    document.getElementById("align-right-btn").addEventListener("click", function() {
+                        if (selectedCell) {
+                            hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htRight");
+                            hot.render();
+                            console.log("Alignment set to right for cell:", selectedCell);
                         }
                     });
     
