@@ -60,7 +60,14 @@ class qtype_sheet_renderer extends qtype_renderer {
         $output = html_writer::tag('label', get_string('answer', 'qtype_sheet'), ['class' => 'sr-only', 'for' => $id]);
 
         // Add the toolbar with formatting buttons using SVG icons
-        $output .= html_writer::start_tag('div', ['class' => 'toolbar', 'style' => 'margin-bottom: 10px; display: flex; align-items: center; gap: 10px;']);
+        $output .= html_writer::start_tag('div', ['class' => 'toolbar', 'style' => 'margin-bottom: 10px; display: flex; align-items: center; gap: 10px;']);        
+
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/copy.svg') . '" alt="Copy" class="toolbar-icon">', ['type' => 'button', 'id' => 'copy-btn', 'title' => 'Copy', 'class' => 'toolbar-btn']);
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/cut.svg') . '" alt="Cut" class="toolbar-icon">', ['type' => 'button', 'id' => 'cut-btn', 'title' => 'Cut', 'class' => 'toolbar-btn']);
+        $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/paste.svg') . '" alt="Paste" class="toolbar-icon">', ['type' => 'button', 'id' => 'paste-btn', 'title' => 'Paste', 'class' => 'toolbar-btn']);
+        
+        $output .= html_writer::tag('div', '', ['class' => 'toolbar-separator']);
+        
         $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/bold.svg') . '" alt="Bold" class="toolbar-icon">', ['type' => 'button', 'id' => 'bold-btn', 'title' => 'Bold', 'class' => 'toolbar-btn']);
         $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/italic.svg') . '" alt="Italic" class="toolbar-icon">', ['type' => 'button', 'id' => 'italic-btn', 'title' => 'Italic', 'class' => 'toolbar-btn']);
         $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/underline.svg') . '" alt="Underline" class="toolbar-icon">', ['type' => 'button', 'id' => 'underline-btn', 'title' => 'Underline', 'class' => 'toolbar-btn']);
@@ -70,13 +77,13 @@ class qtype_sheet_renderer extends qtype_renderer {
         // Add Font Color Picker
         $output .= html_writer::start_tag('div', ['style' => 'position: relative;']);
         $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/text-color.svg') . '" alt="Text Color" class="toolbar-icon">', ['type' => 'button', 'id' => 'text-color-btn', 'title' => 'Text Color', 'class' => 'toolbar-btn']);
-        $output .= html_writer::empty_tag('input', ['type' => 'color', 'id' => 'text-color-picker', 'style' => 'position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;']);
+        $output .= html_writer::empty_tag('input', ['type' => 'color', 'id' => 'text-color-picker', 'class' => 'toolbar-btn', 'style' => 'position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;']);
         $output .= html_writer::end_tag('div');
 
         // Add Background Fill Color Picker
         $output .= html_writer::start_tag('div', ['style' => 'position: relative;']);
         $output .= html_writer::tag('button', '<img src="' . new moodle_url('/question/type/sheet/svgs/compressed/fill-color.svg') . '" alt="Fill Color" class="toolbar-icon">', ['type' => 'button', 'id' => 'fill-color-btn', 'title' => 'Fill Color', 'class' => 'toolbar-btn']);
-        $output .= html_writer::empty_tag('input', ['type' => 'color', 'id' => 'fill-color-picker', 'style' => 'position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;']);
+        $output .= html_writer::empty_tag('input', ['type' => 'color', 'id' => 'fill-color-picker', 'class' => 'toolbar-btn', 'style' => 'position: absolute; top: 0; left: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;']);
         $output .= html_writer::end_tag('div');
 
         $output .= html_writer::tag('div', '', ['class' => 'toolbar-separator']);
@@ -274,8 +281,10 @@ class qtype_sheet_renderer extends qtype_renderer {
 
                         if (cellProperties.readOnly) {
                             formulaBar.disabled = true;
+                            updateToolbarState(true);
                         } else {
                             formulaBar.disabled = false;
+                            updateToolbarState(false);
                         }
                         selectedCell = { row: r, col: c };
                     }
@@ -337,28 +346,35 @@ class qtype_sheet_renderer extends qtype_renderer {
                     dropdownContent.style.display = dropdownContent.style.display === "none" ? "flex" : "none";
                 });
 
+                function hideAlignmentDropdown() {
+                    const dropdownContent = document.querySelector(".dropdown-content");
+                    if (dropdownContent) {
+                        dropdownContent.style.display = "none";
+                    }
+                }
+
                 document.getElementById("align-left-btn").addEventListener("click", function() {
                     if (selectedCell) {
                         hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htLeft");
                         hot.render();
-                        console.log("Alignment set to left for cell:", selectedCell);
                     }
+                    hideAlignmentDropdown(); // Hide dropdown after selection
                 });
 
                 document.getElementById("align-center-btn").addEventListener("click", function() {
                     if (selectedCell) {
                         hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htCenter");
                         hot.render();
-                        console.log("Alignment set to center for cell:", selectedCell);
                     }
+                    hideAlignmentDropdown(); // Hide dropdown after selection
                 });
 
                 document.getElementById("align-right-btn").addEventListener("click", function() {
                     if (selectedCell) {
                         hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htRight");
                         hot.render();
-                        console.log("Alignment set to right for cell:", selectedCell);
                     }
+                    hideAlignmentDropdown(); // Hide dropdown after selection
                 });
 
                 // Monitor the editor input directly for accurate real-time updates
@@ -383,6 +399,29 @@ class qtype_sheet_renderer extends qtype_renderer {
                     if (event.key === "Enter") {
                         event.preventDefault();
                     }
+                });
+
+                function updateToolbarState(isReadonly) {
+                    const toolbarButtons = document.querySelectorAll(".toolbar-btn");
+                    toolbarButtons.forEach(button => {
+                        button.disabled = isReadonly;
+                        button.classList.toggle("disabled", isReadonly);
+                    });
+                }
+
+                document.getElementById("copy-btn").addEventListener("click", function() {
+                    hot.getPlugin("CopyPaste").copy();
+                    console.log("Copy action triggered");
+                });
+
+                document.getElementById("cut-btn").addEventListener("click", function() {
+                    hot.getPlugin("CopyPaste").cut();
+                    console.log("Cut action triggered");
+                });
+
+                document.getElementById("paste-btn").addEventListener("click", function() {
+                    hot.getPlugin("CopyPaste").paste();
+                    console.log("Paste action triggered");
                 });
             });
         ');

@@ -64,3 +64,8 @@
     display: inline-block;
     cursor: pointer;
 }
+
+.toolbar-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}

@@ -310,28 +310,35 @@ class qtype_sheet_edit_form extends question_edit_form {
                         dropdownContent.style.display = dropdownContent.style.display === "none" ? "flex" : "none";
                     });
 
+                    function hideAlignmentDropdown() {
+                        const dropdownContent = document.querySelector(".dropdown-content");
+                        if (dropdownContent) {
+                            dropdownContent.style.display = "none";
+                        }
+                    }
+
                     document.getElementById("align-left-btn").addEventListener("click", function() {
                         if (selectedCell) {
                             hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htLeft");
                             hot.render();
-                            console.log("Alignment set to left for cell:", selectedCell);
                         }
+                        hideAlignmentDropdown(); // Hide dropdown after selection
                     });
 
                     document.getElementById("align-center-btn").addEventListener("click", function() {
                         if (selectedCell) {
                             hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htCenter");
                             hot.render();
-                            console.log("Alignment set to center for cell:", selectedCell);
                         }
+                        hideAlignmentDropdown(); // Hide dropdown after selection
                     });
 
                     document.getElementById("align-right-btn").addEventListener("click", function() {
                         if (selectedCell) {
                             hot.setCellMeta(selectedCell.row, selectedCell.col, "className", "htRight");
                             hot.render();
-                            console.log("Alignment set to right for cell:", selectedCell);
                         }
+                        hideAlignmentDropdown(); // Hide dropdown after selection
                     });
     
                     // Monitor the editor input directly for accurate real-time updates
