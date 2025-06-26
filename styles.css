@@ -69,3 +69,7 @@
     opacity: 0.5;
     pointer-events: none;
 }
+
+.formula-cell-active {
+    border: 2px solid #7d30bb !important;
+}

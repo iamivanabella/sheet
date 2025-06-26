@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <libraries>
     <library>
-        <location>amd/src/handsontable.full.js</location>
+        <location>handsontable/handsontable.full.js</location>
         <name>Handsontable</name>
         <version>14.4.0</version>
         <license>Non-commercial and evaluation</license>
         <licenseversion></licenseversion>
     </library>
     <library>
-        <location>amd/src/hyperformula.full.js</location>
+        <location>handsontable/hyperformula.full.js</location>
         <name>HyperFormula</name>
         <version>2.7.1</version>
         <license>GNU General Public License v3</license>

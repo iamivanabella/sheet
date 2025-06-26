@@ -26,6 +26,6 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'qtype_sheet';
 $plugin->release = '0.2.0';
-$plugin->version = 2024090518;
+$plugin->version = 2024090643;
 $plugin->requires = 2022112800;
 $plugin->maturity = MATURITY_STABLE;

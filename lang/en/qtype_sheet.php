@@ -38,3 +38,5 @@ $string['spreadsheet'] = 'Spreadsheet';
 $string['handsontableheader'] = 'Handsontable Spreadsheet';
 $string['handsontabledata'] = 'Handsontable Data';
 $string['handsontableconfig'] = 'Handsontable Configuration';
+$string['opensheet'] = 'Open spreadsheet';
+$string['spreadsheettitle'] = 'Spreadsheet';
